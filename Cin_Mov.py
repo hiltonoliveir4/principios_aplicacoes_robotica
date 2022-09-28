@@ -14,6 +14,7 @@ class Envir: # Environment class
         self.yel = (255, 255, 0)
 
         #Dimensions
+        self.dimentions = dimentions
         self.height = dimentions[0]
         self.width = dimentions[1]
 
@@ -25,7 +26,7 @@ class Envir: # Environment class
         self.font=pygame.font.Font('freesansbold.ttf', 20)
         self.text=self.font.render('default', True, self.white, self.black)
         self.textRect=self.text.get_rect()
-        self.textRect.center = (dimentions[1]-700,dimentions[0]-100)
+        self.textRect.center = (dimentions[1]-650,dimentions[0]-100)
 
         #Trail
         self.trail_set=[]
@@ -34,6 +35,13 @@ class Envir: # Environment class
         Pose=f"x={x} y={y} theta={int(math.degrees(theta))} v={v:.2f} gamma={int(math.degrees(gamma))}"
         self.text=self.font.render(Pose, True, self.white, self.black)
         self.map.blit(self.text, self.textRect)
+
+    def write_info_target_point(self, x, y):
+        Pose=f"x={x} y={y}"
+        self.text=self.font.render(Pose, True, self.white, self.black)
+        textRect=self.text.get_rect()
+        textRect.center = (int(x), int(y)+30)
+        self.map.blit(self.text, textRect)
 
     def trail(self, pos):
         for i in range(0, len(self.trail_set)-1):
@@ -120,9 +128,9 @@ running = True
 #Environment
 environment = Envir(dims)
 #Robot
-start_pos =(200,500)
-target_pos = (800, 900) #posição alvo
-img_add="car.png"
+start_pos = [500,500]
+target_pos = start_pos #posição alvo
+img_add="libelula.png"
 robot_width = 10
 robot = Robot(start_pos, target_pos, img_add, robot_width)
 #dt
@@ -145,9 +153,10 @@ while running:
     robot.move()
     #Write info on the screen
     environment.write_info(int(robot.x), int(robot.y), robot.theta, robot.v, robot.gamma)
+    environment.write_info_target_point(int(robot.target_pos_x), int(robot.target_pos_y))
 
     robot.draw(environment.map)
-    environment.robot_frame((robot.x, robot.y), robot.theta)
+    # environment.robot_frame((robot.x, robot.y), robot.theta)
     
     environment.trail((robot.x, robot.y))
 pygame.quit()
