@@ -31,7 +31,7 @@ class Envir: # Environment class
         self.trail_set=[]
         
     def write_info(self, x, y, theta, v, gamma):
-        Pose=f"x={x} y={y} theta={int(math.degrees(theta)):.2f} v={v:.2f} gamma={gamma:.2f}"
+        Pose=f"x={x} y={y} theta={int(math.degrees(theta))} v={v:.2f} gamma={int(math.degrees(gamma))}"
         self.text=self.font.render(Pose, True, self.white, self.black)
         self.map.blit(self.text, self.textRect)
 
@@ -56,8 +56,8 @@ class Envir: # Environment class
         
 class Robot:
     def __init__(self, startpos, target_pos, robotImg, width):
-      #Initial conditions
-        self.w=width
+        #Initial conditions
+        self.w=1
         self.x=startpos[0]
         self.y=startpos[1]
         self.v=0
@@ -79,37 +79,29 @@ class Robot:
         
     def calc_move_to_target(self):
         kv = 0.5
-        kh = 4
+        kh = math.radians(4)
 
-        v_p = kv * math.sqrt((self.x - self.target_pos_x)**2 + (self.y - self.target_pos_y)**2)
-        theta_p = math.atan((self.y - self.target_pos_y) / (self.x - self.target_pos_x))
-
+        theta_p = math.atan2(-(self.target_pos_y - self.y), (self.target_pos_x - self.x))
         gamma = kh * (theta_p - self.theta)
+
+        v_p = kv * math.sqrt((self.target_pos_x - self.x)**2 + (self.target_pos_y - self.y)**2)
 
         return [v_p, gamma]
 
     def move(self, event=None):
         if event is not None:
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_q: 
-                    # self.gamma += 0.5
-                    pass
-                elif event.key == pygame.K_a:
-                    # self.gamma -= 0.5
-                    pass
-                elif event.key == pygame.K_w:
-                    pass
-                elif event.key == pygame.K_s:
-                    pass
-
-        control = self.calc_move_to_target()
-
-        self.v = control[0]        
-        self.gamma = control[1]
+            if event.type == pygame.MOUSEBUTTONUP:
+                pos = pygame.mouse.get_pos()
+                self.target_pos_x = pos[0]
+                self.target_pos_y = pos[1]
 
         self.x+=self.v*math.cos(self.theta)*dt
         self.y-=self.v*math.sin(self.theta)*dt
         self.theta+=(self.v/self.w)*math.tan(self.gamma)*dt
+
+        control = self.calc_move_to_target()
+        self.v = control[0]
+        self.gamma = control[1]
 
         #Reset theta
         if(self.theta>2*math.pi or self.theta<-2*math.pi):
@@ -118,53 +110,44 @@ class Robot:
         #Change in orientation
         self.rotated=pygame.transform.rotozoom(self.img, math.degrees(self.theta), 1) # Rotate image 'theta' with a scale operation of 1 - no change in size
         self.rect=self.rotated.get_rect(center=(self.x, self.y))
-        
+    
 #Initialisation
 pygame.init()
-
 #Dimensions
-dims = (800, 800)
-
+dims = (1000, 1000)
 #Status
 running = True
-
 #Environment
 environment = Envir(dims)
-
 #Robot
-start_pos =(400,400)
-target_pos = (0, 0) #posição alvo
-
-img_add="robo.png"
-robot_width = 8 # 8 pixels
+start_pos =(200,500)
+target_pos = (800, 900) #posição alvo
+img_add="car.png"
+robot_width = 10
 robot = Robot(start_pos, target_pos, img_add, robot_width)
-
 #dt
 dt=0
-lasttime=pygame.time.get_ticks()
-
+lasttime=0
 #Simulation loop
 while running:
+    pygame.draw.circle(environment.map, (100, 100, 100), [robot.target_pos_x, robot.target_pos_y], 5)
     #Verify events
     for event in pygame.event.get():
         if event.type == pygame.QUIT: # Quit the window
             running = False
         robot.move(event)
-
     #Time change
     dt = (pygame.time.get_ticks() - lasttime)/1000 # Current minus last time # Time in seconds
     lasttime=pygame.time.get_ticks() #Update last time
-    
     #Update
     pygame.display.update()
     environment.map.fill(environment.black)
     robot.move()
-
+    #Write info on the screen
     environment.write_info(int(robot.x), int(robot.y), robot.theta, robot.v, robot.gamma)
 
     robot.draw(environment.map)
     environment.robot_frame((robot.x, robot.y), robot.theta)
     
     environment.trail((robot.x, robot.y))
-
 pygame.quit()
